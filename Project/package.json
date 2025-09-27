@@ -1,0 +1,15 @@
+{
+  "name": "mahi-marriage-brokerage",
+  "version": "1.0.0",
+  "description": "Marriage Brokerage System - Full Stack Application",
+  "scripts": {
+    "dev": "npx concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "mvn spring-boot:run",
+    "frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "install-frontend": "cd frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
