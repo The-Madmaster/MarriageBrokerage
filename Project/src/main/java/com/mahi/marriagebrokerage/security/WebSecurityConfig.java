@@ -67,17 +67,17 @@ public class WebSecurityConfig {
         .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
         .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(authz -> authz
-            // Public / authentication endpoints (Spring MVC)
-            .requestMatchers(mvc.pattern("/api/auth/**")).permitAll()
-            .requestMatchers(mvc.pattern("/api/public/**")).permitAll()
+            // Public / authentication endpoints using AntPathRequestMatcher for consistency
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll()
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/public/**")).permitAll()
             // H2 console served by its own servlet -> use AntPathRequestMatcher
             .requestMatchers(AntPathRequestMatcher.antMatcher("/h2-console/**")).permitAll()
             // MFA endpoints (require authentication)
-            .requestMatchers(mvc.pattern("/api/mfa/**")).authenticated()
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/mfa/**")).authenticated()
             // Role secured endpoints
-            .requestMatchers(mvc.pattern("/api/admin/**")).hasRole("ADMIN")
-            .requestMatchers(mvc.pattern("/api/broker/**")).hasAnyRole("ADMIN", "BROKER")
-            .requestMatchers(mvc.pattern("/api/client/**")).hasAnyRole("ADMIN", "BROKER", "CLIENT")
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/admin/**")).hasRole("ADMIN")
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/broker/**")).hasAnyRole("ADMIN", "BROKER")
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/client/**")).hasAnyRole("ADMIN", "BROKER", "CLIENT")
             .anyRequest().authenticated()
         );
 

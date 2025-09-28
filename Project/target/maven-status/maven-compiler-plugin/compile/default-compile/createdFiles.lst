@@ -31,6 +31,7 @@ com/mahi/marriagebrokerage/security/RateLimitFilter.class
 com/mahi/marriagebrokerage/entity/RefreshToken.class
 com/mahi/marriagebrokerage/entity/Client$Gender.class
 com/mahi/marriagebrokerage/entity/User$Role.class
+com/mahi/marriagebrokerage/config/DataInitializer.class
 com/mahi/marriagebrokerage/dto/request/RefreshTokenRequest.class
 com/mahi/marriagebrokerage/security/JwtUtils.class
 com/mahi/marriagebrokerage/repository/InterestRepository.class
