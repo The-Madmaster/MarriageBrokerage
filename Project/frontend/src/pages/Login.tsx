@@ -85,7 +85,7 @@ const Login: React.FC = () => {
               required
               fullWidth
               id="username"
-              label="Username"
+              label="Username or Email"
               name="username"
               autoComplete="username"
               autoFocus

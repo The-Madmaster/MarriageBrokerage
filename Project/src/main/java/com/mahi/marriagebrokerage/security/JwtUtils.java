@@ -4,7 +4,7 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import com.mahi.marriagebrokerage.config.JwtProperties;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -16,11 +16,11 @@ import java.util.Date;
 @Slf4j
 public class JwtUtils {
     
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    private final JwtProperties jwtProperties;
     
-    @Value("${jwt.expiration}")
-    private long jwtExpirationMs;
+    public JwtUtils(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+    }
     
     public String generateJwtToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
@@ -28,7 +28,8 @@ public class JwtUtils {
     }
     
     public String generateTokenFromUsername(String username) {
-        return Jwts.builder()
+    long jwtExpirationMs = jwtProperties.getExpiration();
+    return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
@@ -37,7 +38,7 @@ public class JwtUtils {
     }
     
     private Key key() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
+    return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtProperties.getSecret()));
     }
     
     public String getUserNameFromJwtToken(String token) {
