@@ -1,5 +1,6 @@
 package com.mahi.marriagebrokerage.entity;
 
+import com.mahi.marriagebrokerage.util.StringCryptoConverter;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,12 +31,15 @@ public class User implements UserDetails {
     private String password;
     
     @Column(unique = true, nullable = false)
+    @Convert(converter = StringCryptoConverter.class)
     private String email;
     
     @Column(name = "full_name", nullable = false)
+    @Convert(converter = StringCryptoConverter.class)
     private String fullName;
     
     @Column(name = "phone_number")
+    @Convert(converter = StringCryptoConverter.class)
     private String phoneNumber;
     
     @Enumerated(EnumType.STRING)
@@ -49,6 +53,22 @@ public class User implements UserDetails {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "failed_login_attempts")
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "account_locked_until")
+    private LocalDateTime accountLockedUntil;
+
+    @Column(name = "mfa_enabled")
+    private boolean mfaEnabled = false;
+
+    @Column(name = "mfa_secret")
+    private String mfaSecret;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mfa_type")
+    private MfaType mfaType = MfaType.NONE;
     
     // For brokers - their assigned clients
     @OneToMany(mappedBy = "broker", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -82,7 +102,10 @@ public class User implements UserDetails {
     
     @Override
     public boolean isAccountNonLocked() {
-        return isActive;
+        if (accountLockedUntil == null) {
+            return true;
+        }
+        return LocalDateTime.now().isAfter(accountLockedUntil);
     }
     
     @Override
@@ -97,5 +120,9 @@ public class User implements UserDetails {
     
     public enum Role {
         ADMIN, BROKER, CLIENT
+    }
+
+    public enum MfaType {
+        NONE, EMAIL, TOTP
     }
 }

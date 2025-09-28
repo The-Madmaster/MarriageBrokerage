@@ -1,11 +1,15 @@
 package com.mahi.marriagebrokerage.controller;
 
 import com.mahi.marriagebrokerage.dto.request.LoginRequest;
+import com.mahi.marriagebrokerage.dto.request.TokenRefreshRequest;
 import com.mahi.marriagebrokerage.dto.request.UserRegistrationRequest;
 import com.mahi.marriagebrokerage.dto.response.JwtResponse;
+import com.mahi.marriagebrokerage.dto.response.TokenRefreshResponse;
+import com.mahi.marriagebrokerage.entity.RefreshToken;
 import com.mahi.marriagebrokerage.entity.User;
 import com.mahi.marriagebrokerage.repository.UserRepository;
 import com.mahi.marriagebrokerage.security.JwtUtils;
+import com.mahi.marriagebrokerage.service.RefreshTokenService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +33,8 @@ public class AuthController {
     private PasswordEncoder encoder;
     @Autowired
     private JwtUtils jwtUtils;
+    @Autowired
+    private RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -36,8 +42,44 @@ public class AuthController {
                 new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         User user = (User) authentication.getPrincipal();
+
+        if (user.isMfaEnabled()) {
+            return ResponseEntity.ok().body("MFA required");
+        }
+
         String jwt = jwtUtils.generateJwtToken(authentication);
-        return ResponseEntity.ok(new JwtResponse(jwt, user.getId(), user.getUsername(), user.getEmail(), user.getRole().name()));
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        return ResponseEntity.ok(new JwtResponse(jwt, refreshToken.getToken(), user.getId(), user.getUsername(), user.getEmail(), user.getRole().name()));
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyMfa(@Valid @RequestBody MfaVerificationRequest verificationRequest) {
+        User user = userRepository.findByUsername(verificationRequest.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (mfaService.isTotpValid(user.getMfaSecret(), verificationRequest.getCode())) {
+            Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtils.generateJwtToken(authentication);
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+            return ResponseEntity.ok(new JwtResponse(jwt, refreshToken.getToken(), user.getId(), user.getUsername(), user.getEmail(), user.getRole().name()));
+        } else {
+            return ResponseEntity.badRequest().body("Invalid verification code.");
+        }
+    }
+
+    @PostMapping("/refreshtoken")
+    public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtUtils.generateTokenFromUsername(user.getUsername());
+                    return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken, "Bearer"));
+                })
+                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
     }
 
     @PostMapping("/register")

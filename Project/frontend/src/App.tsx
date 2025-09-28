@@ -10,6 +10,7 @@ import Header from './components/Header';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import MfaSetup from './pages/MfaSetup';
 
 // Create theme
 const theme = createTheme({
@@ -42,6 +43,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/mfa-setup"
+                element={
+                  <ProtectedRoute>
+                    <MfaSetup />
                   </ProtectedRoute>
                 }
               />
