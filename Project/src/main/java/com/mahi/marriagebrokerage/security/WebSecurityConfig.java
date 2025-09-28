@@ -30,6 +30,9 @@ public class WebSecurityConfig {
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
     
+    @Autowired
+    private RateLimitFilter rateLimitFilter;
+    
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
         return new AuthTokenFilter();
@@ -64,15 +67,17 @@ public class WebSecurityConfig {
         .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
         .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(authz -> authz
-            // Public / authentication endpoints (Spring MVC)
-            .requestMatchers(mvc.pattern("/api/auth/**")).permitAll()
-            .requestMatchers(mvc.pattern("/api/public/**")).permitAll()
+            // Public / authentication endpoints using AntPathRequestMatcher for consistency
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll()
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/public/**")).permitAll()
             // H2 console served by its own servlet -> use AntPathRequestMatcher
             .requestMatchers(AntPathRequestMatcher.antMatcher("/h2-console/**")).permitAll()
+            // MFA endpoints (require authentication)
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/mfa/**")).authenticated()
             // Role secured endpoints
-            .requestMatchers(mvc.pattern("/api/admin/**")).hasRole("ADMIN")
-            .requestMatchers(mvc.pattern("/api/broker/**")).hasAnyRole("ADMIN", "BROKER")
-            .requestMatchers(mvc.pattern("/api/client/**")).hasAnyRole("ADMIN", "BROKER", "CLIENT")
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/admin/**")).hasRole("ADMIN")
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/broker/**")).hasAnyRole("ADMIN", "BROKER")
+            .requestMatchers(AntPathRequestMatcher.antMatcher("/api/client/**")).hasAnyRole("ADMIN", "BROKER", "CLIENT")
             .anyRequest().authenticated()
         );
 
@@ -80,6 +85,7 @@ public class WebSecurityConfig {
     http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
     http.authenticationProvider(authenticationProvider());
+    http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
     http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
