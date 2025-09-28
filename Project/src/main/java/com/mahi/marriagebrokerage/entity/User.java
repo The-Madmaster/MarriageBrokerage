@@ -50,6 +50,26 @@ public class User implements UserDetails {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    // MFA fields
+    @Column(name = "mfa_enabled")
+    private Boolean mfaEnabled = false;
+    
+    @Column(name = "totp_secret")
+    private String totpSecret;
+    
+    @Column(name = "backup_phone")
+    private String backupPhone;
+    
+    // Account lockout fields
+    @Column(name = "failed_attempts")
+    private Integer failedAttempts = 0;
+    
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+    
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
+    
     // For brokers - their assigned clients
     @OneToMany(mappedBy = "broker", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Client> clients;
@@ -82,6 +102,9 @@ public class User implements UserDetails {
     
     @Override
     public boolean isAccountNonLocked() {
+        if (lockedUntil != null && LocalDateTime.now().isBefore(lockedUntil)) {
+            return false;
+        }
         return isActive;
     }
     

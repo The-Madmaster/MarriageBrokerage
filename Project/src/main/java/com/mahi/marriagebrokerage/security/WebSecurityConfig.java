@@ -30,6 +30,9 @@ public class WebSecurityConfig {
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
     
+    @Autowired
+    private RateLimitFilter rateLimitFilter;
+    
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
         return new AuthTokenFilter();
@@ -69,6 +72,8 @@ public class WebSecurityConfig {
             .requestMatchers(mvc.pattern("/api/public/**")).permitAll()
             // H2 console served by its own servlet -> use AntPathRequestMatcher
             .requestMatchers(AntPathRequestMatcher.antMatcher("/h2-console/**")).permitAll()
+            // MFA endpoints (require authentication)
+            .requestMatchers(mvc.pattern("/api/mfa/**")).authenticated()
             // Role secured endpoints
             .requestMatchers(mvc.pattern("/api/admin/**")).hasRole("ADMIN")
             .requestMatchers(mvc.pattern("/api/broker/**")).hasAnyRole("ADMIN", "BROKER")
@@ -80,6 +85,7 @@ public class WebSecurityConfig {
     http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
     http.authenticationProvider(authenticationProvider());
+    http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
     http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
