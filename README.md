@@ -1,5 +1,4 @@
-# MarriageBrokerage
-# Mahi Marriage Brokerage System
+# Broker-Centric Marriage Bureau Application
 
 A modular, broker-centric marriage bureau web application built with Java Spring Boot backend, React TypeScript frontend, SQL Server database, and JWT authentication.
 
